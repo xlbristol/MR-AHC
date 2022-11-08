@@ -10,7 +10,7 @@
 ###        (3) seY: A numeric vector of the standarnd errors of the SNP-outcome associations (p_z by 1 vector).
 ###        (4) seX: A numeric vector of the standarnd errors of the SNP-exposure associations (p_z by 1 vector).
 ###        (5) n: A numeric scalar specifiying the sample size.
-###        (6) alpha: A numeric scalar between 0 and 1 specifying the significance level for the t test (default = 0.05).
+###        (6) alpha: A numeric scalar between 0 and 1 specifying the significance level for the confidence interval (default = 0.05).
 ###        (7) tuning: A numeric scalar specifiying the threshold p-value for the Q test (default = 0.1/log(length(betaY))).
 ###        (8) weak: Logical. If weak = TRUE, the weak IV robust Q test is used (default = TRUE).
 ###        (9) smallcluster: A numeric scalar specifiying small clusters (default = 4).
@@ -28,6 +28,8 @@
 ###           (f) t.IV: the t statistic.
 ###         (6) F: the F statistic for all the IVs.
 
+### Source code for the internal functions 'dissim', 'getnns' and 'hierclust' is available at
+### https://github.com/mda-sw/library/blob/master/hierclus/hcluswtd.r
 
 AHC.IV <- function(betaY, betaX, seY, seX, n, alpha = 0.05, tuning = 0.1/log(n), weak = TRUE, smallcluster = 4){
   
@@ -107,7 +109,7 @@ AHC.IV <- function(betaY, betaX, seY, seX, n, alpha = 0.05, tuning = 0.1/log(n),
       trees[[b]] = treesb;
     }
     
-    # Downward testing
+    # Downward testing (algorithm 2)
     start <- 2;
     clusterIV = Q.IV = beta.IV = se.IV = I.IV = clusternames <- list();
     while (start <= length(trees)) {
@@ -397,49 +399,3 @@ hierclust <- function(a, wt) {
   class(retlist) <- "hclust"
   retlist
 }
-
-
-
-######## Running example: Scenario 4 of the simulations in the MR-Clust paper ############
-######## Running example: Scenario 4 of the simulations in the MR-Clust paper ############
-######## Running example: Scenario 4 of the simulations in the MR-Clust paper ############
-
-# L = 90  # number of IVs
-# K = 5  # number of IV clusters (including the junk cluster)
-# N = 5000  # sample size
-# beta = c(0.4, -0.4, 0.8, 0) #  true causal effects of the non-junk clusters
-# tau = 2
-# 
-# SNPs_group = mySNPs = matrix(c(rep(1, 10), rep(0, L-10),
-#                                rep(0,10), rep(1, 20), rep(0, L-30),
-#                                rep(0, 10), rep(0, 20), rep(1, 40), rep(0, L-70),
-#                                rep(0, 10), rep(0, 20), rep(0, 40), rep(1,10), rep(0, L-80),
-#                                rep(0, 10), rep(0, 20), rep(0, 40), rep(0,10), rep(1,10)),
-#                                nrow = K, byrow = T)
-# 
-# set.seed(14609)
-# 
-# # generate betaX and seX
-# effect_x_mean = rnorm(L, 0, 1)
-# MAF = runif(L, 0.05, 0.5)
-# betaX = rnorm(L, effect_x_mean, sqrt(1/(N*MAF*(1-MAF))))
-# seX = sqrt(1/(N*MAF*(1-MAF)))
-# 
-# # generate betaY
-# betaY = rep(NA, L)
-# for (k in 1:(K-1)){
-#   SNPs_k = which(SNPs_group[k,]==1)
-#   betaY[SNPs_k] = rnorm(length(SNPs_k), beta[k]*betaX[SNPs_k], sqrt(tau/(N*MAF[SNPs_k]*(1-MAF[SNPs_k]))))
-# }
-# 
-# # generate betaY for the junk cluster
-# SNP_junk = which(SNPs_group[K,] == 1)
-# junk_mean = rnorm(10, 0, 1)
-# betaY[SNP_junk] = rnorm(length(SNP_junk), junk_mean*betaX[SNP_junk], sqrt(tau/(N*MAF[SNP_junk]*(1-MAF[SNP_junk]))))
-# 
-# # generate seY
-# seY = sqrt(tau/(N*MAF*(1-MAF)))
-# 
-# # run AHC
-# AHC_results <- AHC.IV(betaY, betaX, seY, seX, n = N)
-# 
